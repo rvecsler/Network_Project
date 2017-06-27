@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<html>
 <style>
     text {
         
         fill: steelblue;
+        font-size: 1.5em;
     }
 .links line {
   stroke: #999;
@@ -14,12 +16,24 @@
   stroke: #fff;
   stroke-width: 1px;
 }
+    .ui-widget {
+        float:right;
+    }
 
 </style>
+<body>
+<div class="ui-widget">
+   <input id="search">
+    <button type="button" onclick="searchNode()">Search</button>
+</div>
 <svg width="1000" height="800"></svg>
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 
+<script>
+    
+//___________________________________CONSTANTS_______________________________________________________
 var svg = d3.select("svg"),
     width = +svg.attr("width"),
     height = +svg.attr("height");
@@ -41,7 +55,7 @@ var svg = d3.select("svg"),
     .style("stroke", "#4679BD")
     .style("opacity", "0.6");
     
-    
+var searchn = d3.select('#search');
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
 var simulation = d3.forceSimulation()
@@ -50,7 +64,8 @@ var simulation = d3.forceSimulation()
     .force("X",d3.forceX().x(function(d) { return d.lng }))
     .force("Y",d3.forceY().y(function(d) { return d.lat }))
     .force("center", d3.forceCenter(width / 2, height / 2));
-
+    
+    //___________________________________PULL IN DATA_____CREATE NODES AND LINKS________________________________________
 d3.json("data/nodelinkdata_m.json", function(error, graph) {
   if (error) throw error;
 
@@ -68,12 +83,13 @@ d3.json("data/nodelinkdata_m.json", function(error, graph) {
     .data(graph.nodes)
     .enter().append("circle")
       .attr("r", 6)
+      .attr("class", "node")
       .attr("fill", function(d) { return color(d.boro); })
       .call(d3.drag()
           .on("start", dragstarted)
           .on("drag", dragged)
           .on("end", dragended))
-      .on("dblclick", connectedNodes);
+      .on("click", connectedNodes);
 
   node.append("title")
       .text(function(d) { return d.name + " : " + d.line; });
@@ -96,7 +112,9 @@ d3.json("data/nodelinkdata_m.json", function(error, graph) {
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; });
   }
+
     
+    //___________________________________NEIGHBORS_______________________________________________________
     //Toggle stores whether the highlighting is on
 var toggle = 0;
 //Create an array logging what is connected to what
@@ -130,9 +148,26 @@ function connectedNodes() {
         toggle = 0;
     }
 };
+
+    //___________________________________SEARCH_______________________________________________________
+    var optArray = [];
+    for (var i = 0; i < graph.nodes.length - 1; i++) {
+    optArray.push(graph.nodes[i].name+" : "+graph.nodes[i].line);
+    }
+    
+    optArray = optArray.sort();
+    
+    $(function () {
+    $("#search").autocomplete({
+        source: optArray
+        });
+    });
+
+    
+    
 });
     
-
+//___________________________________FUNCTIONS_______________________________________________________
 
 function dragstarted(d) {
   if (!d3.event.active) simulation.alphaTarget(0.6).restart();
@@ -151,6 +186,26 @@ function dragended(d) {
   d.fy = null;
 }
 
-
+function searchNode() {
+    //find the node
+    var selectedVal = searchn.property("value");
+    var node = svg.selectAll(".node");
+    
+    if (selectedVal == "none") {
+        node.style("stroke", "white").style("stroke-width", "1");} 
+    else {
+        var selected = node.filter(function (d, i) { console.log('val',selectedVal,'match',d.name+" : "+d.line);
+            return d.name+" : "+d.line != selectedVal;
+        });
+        selected.style("opacity", "0");
+        var link = svg.selectAll(".link")
+        link.style("opacity", "0");
+        d3.selectAll(".node, .link").transition()
+            .duration(5000)
+            .style("opacity", 1);
+        }
+    }; 
 
 </script>
+    </body>
+</html>
