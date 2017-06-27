@@ -50,14 +50,14 @@ d3.json("data/nodelinkdata_m.json", function(error, graph) {
     .data(graph.nodes)
     .enter().append("circle")
       .attr("r", 4)
-      .attr("fill", function(d) { return color(d.line); })
+      .attr("fill", function(d) { return color(d.boro); })
       .call(d3.drag()
           .on("start", dragstarted)
           .on("drag", dragged)
           .on("end", dragended));
 
   node.append("title")
-      .text(function(d) { return d.name; });
+      .text(function(d) { return d.name + " : " + d.line; });
 
   simulation
       .nodes(graph.nodes)
@@ -80,7 +80,7 @@ d3.json("data/nodelinkdata_m.json", function(error, graph) {
 });
 
 function dragstarted(d) {
-  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+  if (!d3.event.active) simulation.alphaTarget(0.6).restart();
   d.fx = d.x;
   d.fy = d.y;
 }
