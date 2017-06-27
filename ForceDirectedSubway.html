@@ -12,7 +12,7 @@
 
 .nodes circle {
   stroke: #fff;
-  stroke-width: 1.5px;
+  stroke-width: 1px;
 }
 
 </style>
@@ -25,6 +25,23 @@ var svg = d3.select("svg"),
     height = +svg.attr("height");
 
     svg.append("text").text(function(d) { return "NYC Subway System: Force Directed Graph";}).attr("x",1050-width).attr("y",height-750);
+    
+    svg.append("defs").selectAll("marker")
+    .data(["suit", "licensing", "resolved"])
+  .enter().append("marker")
+    .attr("id", function(d) { return d; })
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 25)
+    .attr("refY", 0)
+    .attr("markerWidth", 2)
+    .attr("markerHeight", 2)
+    .attr("orient", "auto")
+  .append("path")
+    .attr("d", "M0,-5L10,0L0,5 L10,0 L0, -5")
+    .style("stroke", "#4679BD")
+    .style("opacity", "0.6");
+    
+    
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
 var simulation = d3.forceSimulation()
@@ -42,19 +59,21 @@ d3.json("data/nodelinkdata_m.json", function(error, graph) {
     .selectAll("line")
     .data(graph.links)
     .enter().append("line")
-      .attr("stroke-width", function(d) { return Math.sqrt(d.duration)/4; });
+      .attr("stroke-width", function(d) { return Math.sqrt(d.duration)/6; })
+      .style("marker-end", "url(#suit)") ;
 
   var node = svg.append("g")
       .attr("class", "nodes")
     .selectAll("circle")
     .data(graph.nodes)
     .enter().append("circle")
-      .attr("r", 4)
+      .attr("r", 6)
       .attr("fill", function(d) { return color(d.boro); })
       .call(d3.drag()
           .on("start", dragstarted)
           .on("drag", dragged)
-          .on("end", dragended));
+          .on("end", dragended))
+      .on("dblclick", connectedNodes);
 
   node.append("title")
       .text(function(d) { return d.name + " : " + d.line; });
@@ -77,7 +96,43 @@ d3.json("data/nodelinkdata_m.json", function(error, graph) {
         .attr("cx", function(d) { return d.x; })
         .attr("cy", function(d) { return d.y; });
   }
+    
+    //Toggle stores whether the highlighting is on
+var toggle = 0;
+//Create an array logging what is connected to what
+var linkedByIndex = {};
+for (i = 0; i < graph.nodes.length; i++) {
+    linkedByIndex[i + "," + i] = 1;
+};
+graph.links.forEach(function (d) {
+    linkedByIndex[d.source.index + "," + d.target.index] = 1;
 });
+//This function looks up whether a pair are neighbours
+function neighboring(a, b) {
+    return linkedByIndex[a.index + "," + b.index];
+}
+function connectedNodes() {
+    if (toggle == 0) {
+        //Reduce the opacity of all but the neighbouring nodes
+        d = d3.select(this).node().__data__;
+        node.style("opacity", function (o) {
+            return neighboring(d, o) | neighboring(o, d) ? 1 : 0.1;
+        });
+        link.style("opacity", function (o) {
+            return d.index==o.source.index | d.index==o.target.index ? 1 : 0.1;
+        });
+        //Reduce the op
+        toggle = 1;
+    } else {
+        //Put them back to opacity=1
+        node.style("opacity", 1);
+        link.style("opacity", 1);
+        toggle = 0;
+    }
+};
+});
+    
+
 
 function dragstarted(d) {
   if (!d3.event.active) simulation.alphaTarget(0.6).restart();
@@ -95,5 +150,7 @@ function dragended(d) {
   d.fx = null;
   d.fy = null;
 }
+
+
 
 </script>
