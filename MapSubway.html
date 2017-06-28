@@ -11,7 +11,7 @@
 
  <style>
 body {
-   
+    font-size: .8em;
     font-family: "Proxima Nova", "Montserrat", sans-serif;
 }
      
@@ -21,8 +21,7 @@ body {
     min-height = 580;
     position:relative;
     margin: 90px;
-    font-size: .8em;
-    
+        
      }
 #svg {display:inline-block;
      }
@@ -41,29 +40,34 @@ h2 {
 }
      
 .st_point {
-    fill: steelblue;
+    fill: lightskyblue;
 }
      
 .hover {
-    fill: yellow;   
+    fill: mistyrose;   
 }
-
+.sp_metric {
+    fill: crimson;
+    stroke: crimson;
+    color: crimson;
+     }
+     
 .path_st {
-    fill: red;
-    stroke: red;
-    color: red;
+    fill: crimson;
+    stroke: crimson;
+    color: crimson;
      }
      
 .mpath_st {
-    fill: orange;
-    stroke: orange;
-    color: orange;
+    fill: lightcoral;
+    stroke: lightcoral;
+    color: lightcoral;
      }
      
 .rem_st {
-    fill: black;
-    stroke: black;
-    color: black;
+    fill: midnightblue;
+    stroke: midnightblue;
+    color: midnightblue;
      }
      
 .tar_st, .src_st {
@@ -100,12 +104,12 @@ h2 {
         <div id="info"><h3>Shortest Path from Source to Target Station</h3></div>
     </div>
     <div id="user_selections">
+        <div id = "source_station" class = "dropdown">
+            <h3>Source Station</h3>  
+        </div> 
         <div id = "target_station" class = "dropdown">
             <h3>Target Station</h3>  
         </div> 
-        <div id = "source_station" class = "dropdown">
-            <h3>Source Station</h3>  
-        </div>  
         <div id = "removed_station" class = "dropdown">
             <h3>Station to Remove</h3>  
         </div> 
@@ -113,51 +117,49 @@ h2 {
     <script>
 
        
-    //add the user paramters_____________________________
+    //_____________________________USER PARAMETERS_____________________________
     
-       
-     
         
-    //target station selection
+    //add source station selection
+    var selects = d3.select('#source_station')
+    .append('select')
+  	 .attr('class','selects')
+        .on('change',onschange);
+        
+    //data comes from stations.json
+    var options = selects
+        .selectAll('option')
+        .data(stations_json.features)
+            .enter().append('option')
+            .attr('value', function (d) { return d.properties.station_id; })
+		  .attr('label',function(d) { return [d.properties.name + " : " + d.properties.line];});
+    
+
+        
+   //add target station selection
      var selectt = d3.select('#target_station')
     .append('select')
   	 .attr('class','selectt')
         .on('change',ontchange)
         
-
+     //data comes from stations.json
     var optiont = selectt
     .selectAll('option')
     .data(stations_json.features)
           .enter().append('option')
 		.attr('value', function (d) { return d.properties.station_id; })
 		.attr('label',function(d) { return [d.properties.name + " : " + d.properties.line];});
-        
-    
-    //source station selection
-    var selects = d3.select('#source_station')
-    .append('select')
-  	 .attr('class','selects')
-        .on('change',onschange)
-        
 
-    var options = selects
-    .selectAll('option')
-    .data(stations_json.features.sort(function(a, b) { return b.properties.name - a.properties.name; }))
-        .enter().append('option')
-        .attr('value', function (d) { return d.properties.station_id; })
-		.attr('label',function(d) { return [d.properties.name + " : " + d.properties.line];});
-    
-   
-
-    //clear selection
+    //add clear selection button
     var clearb = d3.select("#user_selections")  
     .append("input")
         .attr("type", "button")
         .attr("name", "clear selections")
         .attr("value", "Clear Selections")
         .attr("onclick", "togglePressed()"); 
-        
-        //removed node selection
+    
+    
+    //add removed node selection
     var selectr = d3.select('#removed_station')
     .append('select')
   	 .attr('class','selectr')
@@ -213,29 +215,39 @@ h2 {
         });
         
         
-//On user selection change____________________________
-function path_nodes(paths,i){
-    d3.select("#info")
-    .selectAll("p")
-        .data(paths)
-        .enter().append("p")
-            .text(function(paths) { i+=i; return paths;})
+//____________________________FUNCTIONS____________________________
+        
+//highlight original path and add path details to info section 
+function path_nodes(paths, length){
+    paths.forEach(function(d) { var fp = stations_json.features.filter(function(p) { return p.properties.station_id.includes(d);});
+                    d3.select("#info").append("p").data(fp).text(function(d) { return d.properties.name+ " : " +d.properties.line;});});           
+                 
+    
+    //remove the first and last node, change the class of the middle nodes - color change
     paths.pop();
     paths.shift();
     paths.forEach(function(d) { d3.select(".id_"+d).attr("class","path_st id_"+d );});
- 
+    
+    d3.select("#info").append('p')
+            .attr("class","sp_metric")
+            .text(length + ' is the total duration from source to target station.')
+                .style("fill", "red");
 };
 
-function mpath_nodes(paths,i){
+function mpath_nodes(paths, length){
     
-    d3.select("#info")
-    .selectAll("p")
-        .data(paths)
-        .enter().append("p")
-            .text(function(paths) { i+=i; return paths;})
+    paths.forEach(function(d) { var fp = stations_json.features.filter(function(p) { return p.properties.station_id.includes(d);});
+                    d3.select("#info").append("p").data(fp).text(function(d) { return d.properties.name+ " : " +d.properties.line;});});           
+                 
+    
+    //remove the first and last node, change the class of the middle nodes - color change
     paths.pop();
     paths.shift();
     paths.forEach(function(d) { d3.select(".id_"+d).attr("class","mpath_st id_"+d );});
+    
+    d3.select("#info").append('p')
+            .attr("class","sp_metric")
+            .text(length + ' is now the total duration from source to target station.');
  
 };
 
@@ -247,16 +259,13 @@ function onschange() {
     d3.select('#source_station')
         .append('p')
             .attr("class","cur_sel")
-            .text(selectSource + ' is the last selected source station.');
+            .text(selectSource + ' is the selected source station.');
     d3.select(".id_"+selectSource)
         .attr("class","src_st id_"+selectSource +" st_point");
     
         
 };
         
-Array.prototype.intersect = function(arr){
- return this.filter(function(a){return ~this.indexOf(a);},arr);
-}
         
 function ontchange() {
 	var selectTarget = selectt.property('value');
@@ -267,30 +276,29 @@ function ontchange() {
     d3.select('#target_station')
         .append('p')
         .attr("class","cur_sel")
-		.text(selectTarget + ' is the last selected target station.');
+		.text(selectTarget + ' is the selected target station.');
     d3.select(".id_"+selectTarget)
         .attr("class","tar_st id_"+selectTarget +" st_point")
         ;
     var shortPathData = spaths_json.features.filter(function(d) { return d.source.includes(selectSource)&&d.target.includes(selectTarget) ;});
-    var shortPathNames = nodes_json.features.filter(function(d){ return d.node.includes(shortPathData);})
-    console.log(nodes_json.features.node);
-    console.log(shortPathData[0].shortpath);
-    path_nodes(shortPathData[0].shortpath,1);
-    //setremvalnodes(shortPathData[0].shortpath);
-    
-    
+        
+    //highlight the stations along the shortest path
+    path_nodes(shortPathData[0].shortpath, shortPathData[0].length);
+    setremvalnodes(shortPathData[0].shortpath)
 };
     
 
 function setremvalnodes (path){
-    console.log(path);
-    var options = selectr
-    .selectAll('option')
-    .data(path).enter()
-	   .append('option')
-        .attr('value', function (d) { return d.source; })
-		.attr('label',function(d) { return [d.properties.name + " : " + d.properties.line];});
-}
+   path.forEach(function(d) { var fr = stations_json.features.filter(function(p) { return p.properties.station_id.includes(d);});
+                              selectr.append('option')
+                                  .data(fr)
+                                  .attr('value', function (d) { return d.properties.station_id; })
+                                  .attr('label', function (d) { return d.properties.name + " : " + d.properties.line;});})
+};
+                 
+          
+                   
+        
 function onrchange() {
 	var selectRemoval = selectr.property('value');
     var selectTarget = selectt.property('value');
@@ -309,7 +317,7 @@ function onrchange() {
     
     var shortPathData = spaths_json.features.filter(function(d) { return d.source.includes(selectSource)&&d.target.includes(selectTarget) ;});
     
-    mpath_nodes(shortPathData[0].shortpath,1)
+    mpath_nodes(shortPathData[0].shortpath,shortPathData[0].length)
      
 };
         
